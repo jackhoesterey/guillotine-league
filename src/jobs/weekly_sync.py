@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
-"""Tuesday/Wednesday in-season job. Renders a one-page brief; degrades per-section."""
+"""Tuesday/Wednesday in-season job. Writes brief.json for local/offline use.
+
+The hosted brief.html fetches Sleeper in the browser and does not need this file.
+"""
 from __future__ import annotations
 
 import json
