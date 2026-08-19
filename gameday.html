@@ -15,32 +15,13 @@ table{width:100%;border-collapse:collapse;margin-top:16px}
 td,th{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line)}
 th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3)}
 .muted{color:var(--tx3);font-size:12px}
+code{font-size:13px}
 </style>
 </head>
 <body>
 <div class="top"><b>Gameday checklist</b> <a href="/">draft room</a> <a href="/brief.html">brief</a> <a href="/playbook.html">playbook</a></div>
 <div class="wrap" id="root"><p>Loading…</p></div>
-<script>
-function esc(s){return String(s??"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]))}
-fetch("/gameday.json").then(r=>{if(!r.ok)throw new Error(r.status);return r.json()}).then(b=>{
-  const rows=(b.starters||[]).map(s=>{
-    const flag=s.designation||"—";
-    const hot=String(s.status||"").startsWith("UNVERIFIED")||flag==="Out"||flag==="Doubtful";
-    return `<tr><td>${esc(s.slot)}</td><td>${esc(s.name)}</td><td>${esc(s.pos)} ${esc(s.team)}</td>
-      <td style="font-weight:600;color:${hot?"#f85149":"#e8eaef"}">${esc(flag)}</td>
-      <td>${esc(s.kickoff)}</td><td>${esc(s.status)}</td></tr>`;
-  }).join("")||`<tr><td colspan="6">UNVERIFIED — no starters</td></tr>`;
-  document.getElementById("root").innerHTML=`
-    <p>Look with your eyes. This is a checklist, not a decision. Game-day inactives are not automated.</p>
-    <p class="unv">${esc(b.banner)}</p>
-    <p class="muted">built ${esc(b.built_at)}</p>
-    <table><thead><tr><th>Slot</th><th>Player</th><th>Pos</th><th>Designation</th><th>Kickoff</th><th>Source</th></tr></thead>
-    <tbody>${rows}</tbody></table>
-    <h3>Depth-chart moves</h3>
-    <pre style="white-space:pre-wrap;color:#9aa2b1">${esc(JSON.stringify(b.depth_alerts||[],null,2))}</pre>`;
-}).catch(()=>{
-  document.getElementById("root").innerHTML='<p class="unv">UNVERIFIED — no gameday.json. Run <code>python3 src/jobs/gameday_check.py</code> Sunday morning after filling data/league.json.</p>';
-});
-</script>
+<script src="/sleeper-live.js"></script>
+<script>GuillotineLive.bootGameday(document.getElementById("root"));</script>
 </body>
 </html>

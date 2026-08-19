@@ -12,8 +12,8 @@ That single rule changes everything: you aren't trying to win the week, you're t
 |---|---|
 | **`index.html`** | Live draft room — 220-player board with pick tracking, roster-aware suggestions, scarcity meters, and stack/bye warnings. Paste a Sleeper draft id and it marks picks automatically. |
 | **`playbook.html`** | The strategy guide, rendered from the markdown. |
-| **`brief.html`** | Weekly in-season brief (FAAB, chop line, bids). Needs `python3 src/jobs/weekly_sync.py`. |
-| **`gameday.html`** | Sunday starter checklist. Needs `python3 src/jobs/gameday_check.py`. Fail-loud: missing data says UNVERIFIED, never a green check. |
+| **`brief.html`** | Weekly in-season brief (FAAB, chop line, bids). Loads live from Sleeper in the browser via `league.json`. Chop/bids stay UNVERIFIED until Week 1 scores exist. |
+| **`gameday.html`** | Sunday starter checklist from your Sleeper roster. Game-day inactives stay UNVERIFIED (no public inactive list). Fail-loud: missing data never becomes a green check. |
 | **`Guillotine-Playbook-2026.md`** | Strategy guide written from zero football knowledge. Format rules, draft plan, FAAB spend curve, weekly routine, common mistakes. |
 | **`Guillotine-FAAB-Tracker-2026.xlsx`** | Season tracker. Set the current week and it gives you bid ceilings by player tier, flags overspending or hoarding, and logs how close you came to the chop each week. |
 
@@ -136,8 +136,8 @@ src/jobs/      build_crosswalk.py  draft_poll.py  weekly_sync.py  gameday_check.
 1. Copy `data/league.example.json` → `data/league.json` (and optionally `league.json` at the repo root for the static site). Fill `league_id`, `username`, `draft_id`.
 2. `python3 src/jobs/build_crosswalk.py` — maps all 220 board names to Sleeper IDs (fails under 95%). Hand-fix leftovers in `data/id_overrides.json`.
 3. Draft day: click **live** in the draft room, or run `python3 src/jobs/draft_poll.py`.
-4. Tuesday night: `python3 src/jobs/weekly_sync.py` → `brief.json`.
-5. Sunday ~10:45am ET: `python3 src/jobs/gameday_check.py` → `gameday.json`.
+4. Open **`brief.html`** any time — it reads Sleeper live (FAAB remaining, rival landscape, trending adds). Optional local snapshot: `python3 src/jobs/weekly_sync.py` → `brief.json` (gitignored; not required on Vercel).
+5. Open **`gameday.html`** on Sundays for your starter list from Sleeper. Inactives stay UNVERIFIED. Optional local snapshot with nflverse injuries: `python3 src/jobs/gameday_check.py` → `gameday.json`.
 
 `python3 -m unittest discover -s tests` covers name normalization (apostrophes/suffixes), FAAB math, chop-line handling, nflverse spread sign, and the pinned ESPN summary shape.
 
