@@ -1,0 +1,57 @@
+{
+  "header": {
+    "id": "401873272",
+    "competitions": [
+      {
+        "id": "401873272",
+        "date": "2026-08-13T23:00Z",
+        "status": {
+          "type": {
+            "id": "3",
+            "name": "STATUS_FINAL",
+            "state": "post",
+            "completed": true,
+            "description": "Final",
+            "detail": "Final",
+            "shortDetail": "Final"
+          },
+          "isTBDFlex": false
+        }
+      }
+    ]
+  },
+  "injuries": [
+    {
+      "team": {
+        "id": "4",
+        "abbreviation": "CIN",
+        "displayName": "Cincinnati Bengals"
+      },
+      "injuries": [
+        {
+          "status": "Questionable",
+          "date": "2026-08-15T00:36Z",
+          "athlete": {
+            "id": "4432301",
+            "fullName": "Kris Jenkins Jr.",
+            "displayName": "Kris Jenkins Jr."
+          },
+          "type": {
+            "id": "2",
+            "name": "INJURY_STATUS_QUESTIONABLE",
+            "description": "questionable",
+            "abbreviation": "Q"
+          },
+          "details": {
+            "type": "Ankle",
+            "fantasyStatus": {
+              "description": "QUESTIONABLE",
+              "abbreviation": "QUESTIONABLE",
+              "displayDescription": "Questionable"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

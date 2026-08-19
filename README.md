@@ -10,7 +10,10 @@ That single rule changes everything: you aren't trying to win the week, you're t
 
 | File | What it is |
 |---|---|
-| **`index.html`** | Live draft room — 220-player board with pick tracking, roster-aware suggestions, scarcity meters, and stack/bye warnings. Self-contained, no build step, no dependencies. |
+| **`index.html`** | Live draft room — 220-player board with pick tracking, roster-aware suggestions, scarcity meters, and stack/bye warnings. Paste a Sleeper draft id and it marks picks automatically. |
+| **`playbook.html`** | The strategy guide, rendered from the markdown. |
+| **`brief.html`** | Weekly in-season brief (FAAB, chop line, bids). Needs `python3 src/jobs/weekly_sync.py`. |
+| **`gameday.html`** | Sunday starter checklist. Needs `python3 src/jobs/gameday_check.py`. Fail-loud: missing data says UNVERIFIED, never a green check. |
 | **`Guillotine-Playbook-2026.md`** | Strategy guide written from zero football knowledge. Format rules, draft plan, FAAB spend curve, weekly routine, common mistakes. |
 | **`Guillotine-FAAB-Tracker-2026.xlsx`** | Season tracker. Set the current week and it gives you bid ceilings by player tier, flags overspending or hoarding, and logs how close you came to the chop each week. |
 
@@ -27,6 +30,19 @@ Open `index.html` in any browser. Set your draft slot and league size in the hea
 The right-hand panel recalculates on every pick: what to take next and why, what's running out, and what's wrong with your roster so far.
 
 Picks, draft slot, and league size persist in the browser (`localStorage`), so a refresh won't wipe a live draft. Use **reset** to start over.
+
+### Live Sleeper draft
+
+Paste the Sleeper **draft id** (the long number in the draft URL) into the header and click **live**. The board polls `/draft/<id>/picks` every 2.5 seconds and marks taken vs yours. If the connection dies, a red **UNVERIFIED — stale connection** banner appears instead of freezing on old picks.
+
+Optional: copy `data/league.example.json` to `league.json` in the repo root with your `username` / `draft_id` / `league_id`. The draft room will pick it up on load. Query string `?draft=<id>` also works.
+
+A local poller writes the same state to disk if you want it without the browser:
+
+```bash
+python3 src/jobs/build_crosswalk.py    # once
+python3 src/jobs/draft_poll.py         # every 2.5s until you kill it
+```
 
 ### Hosting it
 
@@ -106,6 +122,28 @@ score = (250 - overall_rank)
 Tune the constants to taste — every one of them is a judgment call.
 
 **`src/build_xlsx.py`** — the FAAB tracker. Formulas are written without cached values, so Excel recalculates on open.
+
+## Live data layer (Sleeper / nflverse)
+
+File-based, no database. Raw API responses land in `cache/` with a fetch timestamp **before** they are parsed. Derived state goes in `data/`.
+
+```
+src/clients/   sleeper.py  injuries.py  nflverse.py
+src/core/      ids.py  faab.py  survival.py  roster.py  matchup.py
+src/jobs/      build_crosswalk.py  draft_poll.py  weekly_sync.py  gameday_check.py
+```
+
+1. Copy `data/league.example.json` → `data/league.json` (and optionally `league.json` at the repo root for the static site). Fill `league_id`, `username`, `draft_id`.
+2. `python3 src/jobs/build_crosswalk.py` — maps all 220 board names to Sleeper IDs (fails under 95%). Hand-fix leftovers in `data/id_overrides.json`.
+3. Draft day: click **live** in the draft room, or run `python3 src/jobs/draft_poll.py`.
+4. Tuesday night: `python3 src/jobs/weekly_sync.py` → `brief.json`.
+5. Sunday ~10:45am ET: `python3 src/jobs/gameday_check.py` → `gameday.json`.
+
+`python3 -m unittest discover -s tests` covers name normalization (apostrophes/suffixes), FAAB math, chop-line handling, nflverse spread sign, and the pinned ESPN summary shape.
+
+**What this will not do:** auto-submit a waiver bid, or treat a missing injury feed as "everyone is healthy." Game-day inactives are **UNVERIFIED** — ESPN's scoreboard/summary/injuries endpoints (checked 2026-08-19) return weekly designations, not the 90-minute inactive list. The checklist still makes you look.
+
+Open questions to confirm against your league after Week 1 (do not guess): how eliminated rosters appear in `/rosters` and `/matchups`, and whether `waiver_budget_used` is dollars.
 
 ## Sources
 
