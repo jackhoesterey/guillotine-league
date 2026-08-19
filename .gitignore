@@ -15,7 +15,6 @@ data/gameday.html
 draft_state.json
 brief.json
 gameday.json
-league.json
 
 __pycache__/
 *.pyc
