@@ -35,7 +35,7 @@ Picks, draft slot, and league size persist in the browser (`localStorage`), so a
 
 Paste the Sleeper **draft id** (the long number in the draft URL) into the header and click **live**. The board polls `/draft/<id>/picks` every 2.5 seconds and marks taken vs yours. If the connection dies, a red **UNVERIFIED — stale connection** banner appears instead of freezing on old picks.
 
-Optional: copy `data/league.example.json` to `league.json` in the repo root with your `username` / `draft_id` / `league_id`. The draft room will pick it up on load. Query string `?draft=<id>` also works.
+This repo is wired to **The Chopping Block** (`league.json`): username `FluffyFawn78601`, roster 4, draft slot 4, $1,000 FAAB. The draft id is pre-filled; click **live** when the draft starts (or open `?live=1`). Query string `?draft=<id>` still works for a different draft.
 
 A local poller writes the same state to disk if you want it without the browser:
 

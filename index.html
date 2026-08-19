@@ -579,10 +579,11 @@ fetch("/players.json")
         if (u && u.user_id) myUserId = String(u.user_id);
       }
       if (cfg && cfg.user_id) myUserId = String(cfg.user_id);
+      if (cfg && cfg.draft_slot) $("#slot").value = cfg.draft_slot;
     } catch (e) {}
     const q = new URLSearchParams(location.search);
-    if (q.get("draft")){ $("#draftid").value = q.get("draft"); }
-    if ($("#draftid").value) startLive();
+    if (q.get("draft")){ $("#draftid").value = q.get("draft"); startLive(); }
+    else if (q.get("live") === "1" && $("#draftid").value) startLive();
   })
   .catch(() => { $("#tb").innerHTML = "<tr><td colspan=\"10\">Could not load player board.</td></tr>"; });
 </script></body></html>
