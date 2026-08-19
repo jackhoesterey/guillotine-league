@@ -114,6 +114,14 @@ td.act{width:30px}
 .mini{font-size:11px;color:var(--tx3);margin-top:8px;line-height:1.45}
 .legend{margin-top:16px;font-size:11.5px;color:var(--tx3);line-height:1.9}
 .legend b{font-weight:600}
+#stale{display:none;background:rgba(248,81,73,.12);border-bottom:1px solid rgba(248,81,73,.35);
+ color:#ffb4ae;padding:8px 18px;font-size:13px}
+#stale.on{display:block}
+#livepill.live{border-color:var(--floor);color:var(--floor)}
+#livepill.stale{border-color:var(--avoid);color:var(--avoid)}
+input#draftid{width:140px;background:var(--panel2);border:1px solid var(--line);color:var(--tx);
+ padding:4px 8px;border-radius:6px;font-size:12px;outline:none}
+input#draftid:focus{border-color:var(--accent)}
 @media(max-width:1180px){
  .layout{grid-template-columns:1fr}
  .side{position:static;max-height:none}
@@ -121,7 +129,7 @@ td.act{width:30px}
 }
 @media(max-width:700px){ .by,.num.t,.num.b{display:none} }
 </style></head><body>
-
+<div id="stale">UNVERIFIED — stale connection. Picks are not live. Check Sleeper.</div>
 <div class="top"><div class="topin">
   <h1>Guillotine Draft Room <span>18 teams · full PPR · 18 rounds</span></h1>
   <div class="setup">slot
@@ -134,6 +142,11 @@ td.act{width:30px}
   <span class="pill" style="cursor:pointer" id="undo">undo</span>
   <span class="pill" style="cursor:pointer" id="reset">reset</span>
   <a class="pill" href="/playbook.html" style="text-decoration:none;color:inherit">playbook</a>
+  <a class="pill" href="/brief.html" style="text-decoration:none;color:inherit">brief</a>
+  <a class="pill" href="/gameday.html" style="text-decoration:none;color:inherit">gameday</a>
+  <input id="draftid" placeholder="Sleeper draft id" autocomplete="off">
+  <span class="pill" style="cursor:pointer" id="golive">live</span>
+  <span class="pill" id="livepill">offline</span>
 </div></div>
 
 <div class="layout">
@@ -486,13 +499,90 @@ $("#reset").addEventListener("click", () => {
 });
 ["slot","teams"].forEach(id => $("#"+id).addEventListener("input", () => { save(); render(); }));
 
+/* ---------- live Sleeper draft ---------- */
+let live = false, liveTimer = null, lastLiveOk = 0, myUserId = null, unmappedN = 0;
+const bySid = {};
+
+function setLivePill(mode, text){
+  const el = $("#livepill");
+  el.className = "pill" + (mode ? " "+mode : "");
+  el.textContent = text;
+  $("#stale").classList.toggle("on", mode === "stale");
+}
+
+function applyLivePicks(picks){
+  const next = {};
+  let miss = 0;
+  for (const pk of picks || []){
+    const p = bySid[String(pk.player_id)];
+    if (!p){ miss++; continue; }
+    const mine = myUserId && String(pk.picked_by||"") === String(myUserId);
+    next[p.r] = mine ? "mine" : "taken";
+  }
+  unmappedN = miss;
+  st = next;
+  save();
+  render();
+}
+
+async function pullLive(){
+  const id = ($("#draftid").value || "").trim();
+  if (!id) return;
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 4000);
+  try {
+    const r = await fetch("https://api.sleeper.app/v1/draft/"+id+"/picks", {signal: ctrl.signal});
+    if (!r.ok) throw new Error("HTTP "+r.status);
+    const picks = await r.json();
+    lastLiveOk = Date.now();
+    applyLivePicks(picks);
+    const extra = unmappedN ? ` · ${unmappedN} off-board` : "";
+    setLivePill("live", `live · ${picks.length} picks${extra}`);
+  } catch (e) {
+    if (Date.now() - lastLiveOk > 8000) setLivePill("stale", "UNVERIFIED — stale");
+  } finally { clearTimeout(t); }
+}
+
+async function startLive(){
+  const id = ($("#draftid").value || "").trim();
+  if (!id){ alert("Paste a Sleeper draft id (from the draft URL)."); return; }
+  live = true;
+  lastLiveOk = 0;
+  setLivePill("live", "connecting…");
+  try {
+    const d = await fetch("https://api.sleeper.app/v1/draft/"+id).then(r => r.json());
+    const teamsN = (d.settings && d.settings.teams) || teams();
+    $("#teams").value = teamsN;
+    const order = d.draft_order || {};
+    if (myUserId && order[myUserId] != null) $("#slot").value = order[myUserId];
+  } catch (e) {}
+  if (liveTimer) clearInterval(liveTimer);
+  await pullLive();
+  liveTimer = setInterval(pullLive, 2500);
+}
+
+$("#golive").addEventListener("click", startLive);
+
 fetch("/players.json")
   .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-  .then(data => {
+  .then(async data => {
     D = data;
-    D.forEach(p => byName[p.r] = p);
+    D.forEach(p => { byName[p.r] = p; if (p.sid) bySid[String(p.sid)] = p; });
     load();
     render();
+    try {
+      const cfg = await fetch("/league.json").then(r => r.ok ? r.json() : null).catch(() => null);
+      if (cfg && cfg.draft_id && !$("#draftid").value) $("#draftid").value = cfg.draft_id;
+      if (cfg && cfg.username){
+        const u = await fetch("https://api.sleeper.app/v1/user/"+encodeURIComponent(cfg.username))
+          .then(r => r.ok ? r.json() : null).catch(() => null);
+        if (u && u.user_id) myUserId = String(u.user_id);
+      }
+      if (cfg && cfg.user_id) myUserId = String(cfg.user_id);
+    } catch (e) {}
+    const q = new URLSearchParams(location.search);
+    if (q.get("draft")){ $("#draftid").value = q.get("draft"); }
+    if ($("#draftid").value) startLive();
   })
   .catch(() => { $("#tb").innerHTML = "<tr><td colspan=\"10\">Could not load player board.</td></tr>"; });
 </script></body></html>
